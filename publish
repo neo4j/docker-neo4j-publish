@@ -1,0 +1,27 @@
+#!/bin/bash -eu
+
+docker login "--username=${DOCKER_USERNAME}" "--password=${DOCKER_PASSWORD}"
+
+shopt -s nullglob
+for dir in */; do
+  version="${dir%/}"
+
+  if [[ "${version}" != *-* ]]; then
+    echo "Not publishing ${version} (not a pre-release)" >&2
+    continue
+  fi
+
+  for edition in "community" "enterprise"; do
+    if [[ "${edition}" == "community" ]]; then
+      tag="${version}"
+    else
+      tag="${version}-${edition}"
+    fi
+
+    image="neo4j/neo4j-experimental:${tag}"
+    echo "Publishing ${image}" >&2
+
+    docker build --tag "${image}" "${version}/${edition}"
+    docker push "${image}"
+  done
+done
