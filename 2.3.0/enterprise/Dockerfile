@@ -1,8 +1,12 @@
 FROM java:openjdk-8-jre
 
-ENV NEO4J_SHA256 299048984a29d5dfb1cee3b0aa8081759f4e0bfe027092ea0a677ba1e16d6968
-ENV NEO4J_TARBALL neo4j-enterprise-3.1.0-M05-unix.tar.gz
-ARG NEO4J_URI=http://dist.neo4j.org/neo4j-enterprise-3.1.0-M05-unix.tar.gz
+RUN apt-get update --quiet --quiet \
+    && apt-get install --quiet --quiet --no-install-recommends lsof \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NEO4J_SHA256 0d3f370f8141d8bc37065f843af190c405cba098d1bb82065ffc0cb5b99950b7
+ENV NEO4J_TARBALL neo4j-enterprise-2.3.0-unix.tar.gz
+ARG NEO4J_URI=http://dist.neo4j.org/neo4j-enterprise-2.3.0-unix.tar.gz
 
 COPY ./local-package/* /tmp/
 
@@ -21,7 +25,7 @@ VOLUME /data
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-EXPOSE 7474 7473 7687
+EXPOSE 7474 7473
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["neo4j"]
