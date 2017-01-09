@@ -1,4 +1,4 @@
-FROM java:openjdk-8-jre
+FROM openjdk:8-jre
 
 ENV NEO4J_SHA256 143970ee788ac246cdec249ca9fefbeab2f1122255c9e9c1b655f688552acb05
 ENV NEO4J_URI http://dist.neo4j.org/neo4j-community-3.1.0-M04-unix.tar.gz

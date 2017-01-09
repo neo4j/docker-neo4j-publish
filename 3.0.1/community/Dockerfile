@@ -1,4 +1,4 @@
-FROM java:openjdk-8-jre
+FROM openjdk:8-jre
 
 ENV NEO4J_SHA256 ae9d966559c83a9f1c61e1ef4d67aafeb9185e568b6dec0cd6b50e4297a15895
 ENV NEO4J_TARBALL neo4j-community-3.0.1-unix.tar.gz
