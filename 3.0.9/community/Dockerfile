@@ -1,7 +1,7 @@
 FROM openjdk:8-jre
 
-ENV NEO4J_SHA256 0d4ab95746871388bd55e418d148ff9de1440dfb4588ce228e3ac84360c46def
-ENV NEO4J_TARBALL neo4j-community-3.0.9-unix.tar.gz
+ENV NEO4J_SHA256=0d4ab95746871388bd55e418d148ff9de1440dfb4588ce228e3ac84360c46def \
+    NEO4J_TARBALL=neo4j-community-3.0.9-unix.tar.gz
 ARG NEO4J_URI=http://dist.neo4j.org/neo4j-community-3.0.9-unix.tar.gz
 
 COPY ./local-package/* /tmp/

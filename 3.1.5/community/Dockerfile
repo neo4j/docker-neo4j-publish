@@ -2,7 +2,9 @@ FROM openjdk:8-jre-alpine
 
 RUN apk add --no-cache --quiet \
     bash \
-    curl
+    curl \
+    openssl \
+    ca-certificates
 
 ENV NEO4J_SHA256=d38fe7449570dba1f1f69c8582a008b4c7d1368bee13eecbe2315a807b204908 \
     NEO4J_TARBALL=neo4j-community-3.1.5-unix.tar.gz
