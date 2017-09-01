@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM arm64v8/openjdk:8-jre-alpine
 
 RUN apk add --no-cache --quiet \
     bash \
