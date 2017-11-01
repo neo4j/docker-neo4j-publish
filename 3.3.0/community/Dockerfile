@@ -5,7 +5,8 @@ RUN apk add --no-cache --quiet \
     curl
 
 ENV NEO4J_SHA256=dbbc65683d65018c48fc14d82ee7691ca75f8f6ea79823b21291970638de5d88 \
-    NEO4J_TARBALL=neo4j-community-3.3.0-unix.tar.gz
+    NEO4J_TARBALL=neo4j-community-3.3.0-unix.tar.gz \
+    NEO4J_EDITION=community
 ARG NEO4J_URI=http://dist.neo4j.org/neo4j-community-3.3.0-unix.tar.gz
 
 COPY ./local-package/* /tmp/
