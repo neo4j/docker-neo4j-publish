@@ -2,7 +2,9 @@ FROM openjdk:8-jre-alpine
 
 RUN apk add --no-cache --quiet \
     bash \
-    curl
+    curl \
+    tini \
+    su-exec
 
 ENV NEO4J_SHA256=370d563213b8df164a886d81e1f81a91ecadb90334b6f47af3607529e10b5113 \
     NEO4J_TARBALL=neo4j-enterprise-3.2.9-unix.tar.gz
@@ -16,6 +18,8 @@ RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && mv /var/lib/neo4j-* /var/lib/neo4j \
     && rm ${NEO4J_TARBALL} \
     && mv /var/lib/neo4j/data /data \
+    && chown -R root:root /data \
+    && chown -R root:root /var/lib/neo4j \
     && ln -s /data /var/lib/neo4j/data \
     && apk del curl
 
@@ -29,5 +33,5 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 EXPOSE 7474 7473 7687
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/docker-entrypoint.sh"]
 CMD ["neo4j"]
