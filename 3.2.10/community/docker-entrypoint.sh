@@ -2,20 +2,51 @@
 
 cmd="$1"
 
-if [[ "${cmd}" != *"neo4j"* ]]; then
-    [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
+# If we're running as root, then run as the neo4j user. Otherwise
+# docker is running with --user and we simply use that user.  Note
+# that su-exec, despite its name, does not replicate the functionality
+# of exec, so we need to use both
+if [ "$(id -u)" = "0" ]; then
+  userid="neo4j"
+  groupid="neo4j"
+  exec_cmd="exec su-exec neo4j"
+else
+  userid="$(id -u)"
+  groupid="$(id -g)"
+  exec_cmd="exec"
+fi
+readonly userid
+readonly groupid
+readonly exec_cmd
 
-    if [ "${cmd}" == "dump-config" ]; then
-        if [ -d /conf ]; then
-            cp --recursive conf/* /conf
-            exit 0
-        else
-            echo "You must provide a /conf volume"
-            exit 1
-        fi
-    fi
-    exec "$@"
-    exit $?
+# Need to chown the home directory - but a user might have mounted a
+# volume here (notably a conf volume). So take care not to chown
+# volumes (stuff not owned by neo4j)
+if [[ "$(id -u)" = "0" ]]; then
+  # Non-recursive chown for the base directory
+  chown "${userid}":"${groupid}" /var/lib/neo4j
+  chmod 700 /var/lib/neo4j
+fi
+
+while IFS= read -r -d '' dir
+do
+  if [[ "$(id -u)" = "0" ]] && [[ "$(stat -c %U "${dir}")" = "neo4j" ]]; then
+    # Using mindepth 1 to avoid the base directory here so recursive is OK
+    chown -R "${userid}":"${groupid}" "${dir}"
+    chmod -R 700 "${dir}"
+  fi
+done <   <(find /var/lib/neo4j -type d -mindepth 1 -maxdepth 1 -print0)
+
+# Data dir is chowned later
+
+if [ "${cmd}" == "dump-config" ]; then
+  if [ -d /conf ]; then
+    ${exec_cmd} cp --recursive conf/* /conf
+    exit 0
+  else
+    echo >&2 "You must provide a /conf volume"
+    exit 1
+  fi
 fi
 
 # Env variable naming convention:
@@ -92,19 +123,19 @@ if [ -d /metrics ]; then
 fi
 
 # set the neo4j initial password only if you run the database server
-if [ "${cmd}" == "neo4j" ] ; then
+if [ "${cmd}" == "neo4j" ]; then
     if [ "${NEO4J_AUTH:-}" == "none" ]; then
         NEO4J_dbms_security_auth__enabled=false
     elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
         password="${NEO4J_AUTH#neo4j/}"
         if [ "${password}" == "neo4j" ]; then
-            echo "Invalid value for password. It cannot be 'neo4j', which is the default."
+            echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
             exit 1
         fi
         # Will exit with error if users already exist (and print a message explaining that)
         bin/neo4j-admin set-initial-password "${password}" || true
     elif [ -n "${NEO4J_AUTH:-}" ]; then
-        echo "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
+        echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
         exit 1
     fi
 fi
@@ -124,10 +155,20 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
+# Chown the data dir now that (maybe) an initial password has been
+# set (this is a file in the data dir)
+if [[ "$(id -u)" = "0" ]]; then
+  chmod -R 755 /data
+  chown -R "${userid}":"${groupid}" /data
+fi
+
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
-if [ "${cmd}" == "neo4j" ] ; then
-    exec neo4j console
+# Use su-exec to drop privileges to neo4j user
+# Note that su-exec, despite its name, does not replicate the
+# functionality of exec, so we need to use both
+if [ "${cmd}" == "neo4j" ]; then
+  ${exec_cmd} neo4j console
 else
-    exec "$@"
+  ${exec_cmd} "$@"
 fi
