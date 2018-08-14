@@ -4,6 +4,8 @@ ENV NEO4J_SHA256 92edf396616be8a1cdb41dd05c300865959f97944f4fe7f50539401a49c095d
 ENV NEO4J_TARBALL neo4j-enterprise-3.0.7-unix.tar.gz
 ARG NEO4J_URI=http://dist.neo4j.org/neo4j-enterprise-3.0.7-unix.tar.gz
 
+RUN apt update && apt install -y vim net-tools
+
 COPY ./local-package/* /tmp/
 
 RUN curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
