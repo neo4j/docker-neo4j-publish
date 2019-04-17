@@ -7,6 +7,46 @@ function running_as_root
     test "$(id -u)" = "0"
 }
 
+# list env variables with prefix NEO4J_ and create settings from them
+function create_configurations
+{
+  for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
+      setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
+      value=$(echo ${!i})
+      # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
+      if [[ -n ${value} ]]; then
+          if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
+              if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
+                  # Remove any lines containing the setting already
+                  sed --in-place "/^${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
+              fi
+              # Then always append setting to file
+              echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
+          else
+              echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
+          fi
+      fi
+  done
+}
+
+function set_initial_password
+{
+  if [ "${NEO4J_AUTH:-}" == "none" ]; then
+      NEO4J_dbms_security_auth__enabled=false
+  elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
+      password="${NEO4J_AUTH#neo4j/}"
+      if [ "${password}" == "neo4j" ]; then
+          echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
+          exit 1
+      fi
+      # Will exit with error if users already exist (and print a message explaining that)
+      bin/neo4j-admin set-initial-password "${password}" || true
+  elif [ -n "${NEO4J_AUTH:-}" ]; then
+      echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
+      exit 1
+  fi
+}
+
 # If we're running as root, then run as the neo4j user. Otherwise
 # docker is running with --user and we simply use that user.  Note
 # that su-exec, despite its name, does not replicate the functionality
@@ -169,41 +209,11 @@ fi
 
 # set the neo4j initial password only if you run the database server
 if [ "${cmd}" == "neo4j" ]; then
-    if [ "${NEO4J_AUTH:-}" == "none" ]; then
-        NEO4J_dbms_security_auth__enabled=false
-    elif [[ "${NEO4J_AUTH:-}" == neo4j/* ]]; then
-        password="${NEO4J_AUTH#neo4j/}"
-        if [ "${password}" == "neo4j" ]; then
-            echo >&2 "Invalid value for password. It cannot be 'neo4j', which is the default."
-            exit 1
-        fi
-        # Will exit with error if users already exist (and print a message explaining that)
-        bin/neo4j-admin set-initial-password "${password}" || true
-    elif [ -n "${NEO4J_AUTH:-}" ]; then
-        echo >&2 "Invalid value for NEO4J_AUTH: '${NEO4J_AUTH}'"
-        exit 1
-    fi
+  set_initial_password
 fi
 
-# list env variables with prefix NEO4J_ and create settings from them
 unset NEO4J_AUTH NEO4J_SHA256 NEO4J_TARBALL
-for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
-    setting=$(echo ${i} | sed 's|^NEO4J_||' | sed 's|_|.|g' | sed 's|\.\.|_|g')
-    value=$(echo ${!i})
-    # Don't allow settings with no value or settings that start with a number (neo4j converts settings to env variables and you cannot have an env variable that starts with a number)
-    if [[ -n ${value} ]]; then
-        if [[ ! "${setting}" =~ ^[0-9]+.*$ ]]; then
-            if grep -q -F "${setting}=" "${NEO4J_HOME}"/conf/neo4j.conf; then
-                # Remove any lines containing the setting already
-                sed --in-place "/^${setting}=.*/d" "${NEO4J_HOME}"/conf/neo4j.conf
-            fi
-            # Then always append setting to file
-            echo "${setting}=${value}" >> "${NEO4J_HOME}"/conf/neo4j.conf
-        else
-            echo >&2 "WARNING: ${setting} not written to conf file because settings that start with a number are not permitted"
-        fi
-    fi
-done
+create_configurations
 
 # Chown the data dir now that (maybe) an initial password has been
 # set (this is a file in the data dir)
