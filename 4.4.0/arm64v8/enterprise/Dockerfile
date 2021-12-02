@@ -1,12 +1,12 @@
-FROM arm64v8/openjdk:11-jdk-slim
+FROM openjdk:11-jdk-slim
 
 ENV NEO4J_SHA256=fe39006b17a4ce27ea9fa3209ce27ea6ca6a761a2e3ebde31f5f9b41ec8da4d7 \
     NEO4J_TARBALL=neo4j-enterprise-4.4.0-unix.tar.gz \
     NEO4J_EDITION=enterprise \
     NEO4J_HOME="/var/lib/neo4j"
 ARG NEO4J_URI=https://dist.neo4j.org/neo4j-enterprise-4.4.0-unix.tar.gz
-ARG TINI_SHA256="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"
-ARG TINI_URI="https://github.com/krallin/tini/releases/download/v0.18.0/tini"
+ARG TINI_SHA256="7c5463f55393985ee22357d976758aaaecd08defb3c5294d353732018169b019"
+ARG TINI_URI="https://github.com/krallin/tini/releases/download/v0.18.0/tini-arm64"
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
