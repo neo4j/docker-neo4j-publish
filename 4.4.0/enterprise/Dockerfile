@@ -1,12 +1,10 @@
 FROM openjdk:11-jdk-slim
 
-ENV NEO4J_SHA256=f0d36427fe4f646e5fca456fe9c584f0b970373574de4d57c9de9ff47df0a0e1 \
-    NEO4J_TARBALL=neo4j-community-4.4.0-unix.tar.gz \
-    NEO4J_EDITION=community \
+ENV NEO4J_SHA256=fe39006b17a4ce27ea9fa3209ce27ea6ca6a761a2e3ebde31f5f9b41ec8da4d7 \
+    NEO4J_TARBALL=neo4j-enterprise-4.4.0-unix.tar.gz \
+    NEO4J_EDITION=enterprise \
     NEO4J_HOME="/var/lib/neo4j"
-ARG NEO4J_URI=https://dist.neo4j.org/neo4j-community-4.4.0-unix.tar.gz
-ARG TINI_SHA256="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"
-ARG TINI_URI="https://github.com/krallin/tini/releases/download/v0.18.0/tini"
+ARG NEO4J_URI=https://dist.neo4j.org/neo4j-enterprise-4.4.0-unix.tar.gz
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
@@ -14,9 +12,6 @@ COPY ./local-package/* /tmp/
 
 RUN apt update \
     && apt install -y curl wget gosu jq \
-    && curl -L --fail --silent --show-error ${TINI_URI} > /sbin/tini \
-    && echo "${TINI_SHA256}  /sbin/tini" | sha256sum -c --strict --quiet \
-    && chmod +x /sbin/tini \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -34,7 +29,25 @@ RUN apt update \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
     && rm -rf /tmp/* \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
+
+# do architecture specific installations
+RUN set -eux; \
+	dpkgArch="$(dpkg --print-architecture)"; \
+	case "${dpkgArch##*-}" in \
+		'amd64') \
+            tinisha="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini"; \
+			;; \
+		'arm64') \
+            tinisha="7c5463f55393985ee22357d976758aaaecd08defb3c5294d353732018169b019"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini-arm64"; \
+			;; \
+		*) echo >&2 "Neo4j does not currently have a docker image for architecture $dpkgArch"; exit 1 ;; \
+	esac \
+    && curl -L --fail --silent --show-error ${tiniurl} > /sbin/tini \
+    && echo "${tinisha}  /sbin/tini" | sha256sum -c --strict --quiet \
+    && chmod +x /sbin/tini \
     && apt-get -y purge --auto-remove curl
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
