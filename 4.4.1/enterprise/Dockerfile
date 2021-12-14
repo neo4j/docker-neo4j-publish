@@ -1,17 +1,17 @@
 FROM openjdk:11-jdk-slim
 
-ENV NEO4J_SHA256=280e15336640e7fdde0dcebca5dcf2a0739dfaab7fa97752a1f98f8ea707fb84 \
-    NEO4J_TARBALL=neo4j-community-4.4.1-unix.tar.gz \
-    NEO4J_EDITION=community \
+ENV NEO4J_SHA256=e524ccb258274645bb684c9f09162bc5e18768d58680dd0fe09afe9d11b63817 \
+    NEO4J_TARBALL=neo4j-enterprise-4.4.1-unix.tar.gz \
+    NEO4J_EDITION=enterprise \
     NEO4J_HOME="/var/lib/neo4j"
-ARG NEO4J_URI=https://dist.neo4j.org/neo4j-community-4.4.1-unix.tar.gz
+ARG NEO4J_URI=https://dist.neo4j.org/neo4j-enterprise-4.4.1-unix.tar.gz
 
 RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j
 
 COPY ./local-package/* /tmp/
 
 RUN apt update \
-    && apt install -y curl wget gosu jq tini \
+    && apt install -y curl wget gosu jq \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -28,6 +28,22 @@ RUN apt update \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /tmp/neo4jlabs-plugins.json /neo4jlabs-plugins.json \
+    && set -eux; \
+	dpkgArch="$(dpkg --print-architecture)"; \
+	case "${dpkgArch##*-}" in \
+		'amd64') \
+            tinisha="12d20136605531b09a2c2dac02ccee85e1b874eb322ef6baf7561cd93f93c855"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini"; \
+			;; \
+		'arm64') \
+            tinisha="7c5463f55393985ee22357d976758aaaecd08defb3c5294d353732018169b019"; \
+            tiniurl="https://github.com/krallin/tini/releases/download/v0.18.0/tini-arm64"; \
+			;; \
+		*) echo >&2 "Neo4j does not currently have a docker image for architecture $dpkgArch"; exit 1 ;; \
+	esac \
+    && curl -L --fail --silent --show-error ${tiniurl} > /sbin/tini \
+    && echo "${tinisha}  /sbin/tini" | sha256sum -c --strict --quiet \
+    && chmod +x /sbin/tini \
     && apt-get -y purge --auto-remove curl \
     && rm -rf /tmp/* \
     && rm -rf /var/lib/apt/lists/*
@@ -43,5 +59,5 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 EXPOSE 7474 7473 7687
 
-ENTRYPOINT ["tini", "-g", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/docker-entrypoint.sh"]
 CMD ["neo4j"]
