@@ -1,6 +1,6 @@
 FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
-COPY --from=eclipse-temurin:11.0.15_10-jdk-jammy $JAVA_HOME $JAVA_HOME
+COPY --from=eclipse-temurin:11 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=444e8b6fd366a60fe35f868b5e3ff84509113c3fcd35d5131e07dfcce8fb9c1a \
     NEO4J_TARBALL=neo4j-enterprise-4.4.10-unix.tar.gz \
