@@ -1,20 +1,6 @@
-FROM debian:bullseye-slim as suexec-builder
-# get su-exec source and checkout a known good version (current HEAD). Verify files contents are expected.
-RUN apt update -q \
-    && apt install -y gcc git make \
-    && git clone https://github.com/ncopa/su-exec.git \
-    && cd su-exec \
-    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
-    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
-    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
-    && make \
-    && rm -rf /var/lib/apt/lists/*
-
-
 FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
-COPY --from=suexec-builder /su-exec/su-exec /usr/bin/su-exec
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=54cdf068887eb9371105999992ae874473b8378f6df06cf16b32a4aa36bc586f \
     NEO4J_TARBALL=neo4j-community-5.14.0-unix.tar.gz \
@@ -27,7 +13,7 @@ RUN addgroup --gid 7474 --system neo4j && adduser --uid 7474 --system --no-creat
 COPY ./local-package/* /startup/
 
 RUN apt update \
-    && apt install -y curl jq procps tini wget \
+    && apt install -y curl gcc git jq make procps tini wget \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
@@ -44,8 +30,15 @@ RUN apt update \
     && ln -s /data "${NEO4J_HOME}"/data \
     && ln -s /logs "${NEO4J_HOME}"/logs \
     && mv /startup/neo4j-admin-report.sh "${NEO4J_HOME}"/bin/neo4j-admin-report \
+    && git clone https://github.com/ncopa/su-exec.git \
+    && cd su-exec \
+    && git checkout 4c3bb42b093f14da70d8ab924b487ccfbb1397af \
+    && echo d6c40440609a23483f12eb6295b5191e94baf08298a856bab6e15b10c3b82891 su-exec.c | sha256sum -c \
+    && echo 2a87af245eb125aca9305a0b1025525ac80825590800f047419dc57bba36b334 Makefile | sha256sum -c \
+    && make \
+    && mv /su-exec/su-exec /usr/bin/su-exec \
     && apt-get -y purge --auto-remove curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /su-exec
 
 
 ENV PATH "${NEO4J_HOME}"/bin:$PATH
