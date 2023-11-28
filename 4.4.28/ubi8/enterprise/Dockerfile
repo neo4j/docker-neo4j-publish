@@ -16,7 +16,8 @@ RUN set -eux; \
             ;; \
         *) echo >&2 "Neo4j does not currently have a docker image for architecture $arch"; exit 1 ;; \
     esac; \
-    microdnf install -y \
+    microdnf install -y dnf; \
+    dnf install -y \
         findutils \
         gcc \
         git \
@@ -47,7 +48,9 @@ RUN set -eux; \
     mv /su-exec/su-exec /usr/bin/su-exec; \
     gpgconf --kill all; \
     rm -rf "$GNUPGHOME" tini.asc /su-exec; \
-    microdnf clean all
+    dnf remove -y gcc git make; \
+    dnf autoremove; \
+    dnf clean all
 
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=57dab47060e05c353c0c6741d9bbd0b8bc05677e5c5e16592ebdaf1ec90b1678 \
