@@ -495,7 +495,8 @@ fi
 # Note that su-exec, despite its name, does not replicate the
 # functionality of exec, so we need to use both
 if [ "${cmd}" == "neo4j" ]; then
-  ${exec_cmd} neo4j console
+  gosu neo4j:neo4j neo4j start
+  tail -f /logs/neo4j.log
 else
   ${exec_cmd} "$@"
 fi
