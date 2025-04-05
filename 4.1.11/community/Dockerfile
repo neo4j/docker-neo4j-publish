@@ -43,9 +43,10 @@ WORKDIR "${NEO4J_HOME}"
 
 VOLUME /data /logs
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/src/app/docker-entrypoint.sh
+RUN chmod +x /usr/src/app/docker-entrypoint.sh
 
 EXPOSE 7474 7473 7687
 
-ENTRYPOINT ["/sbin/tini", "-g", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "-g", "--", "/usr/src/app/docker-entrypoint.sh"]
 CMD ["neo4j"]
