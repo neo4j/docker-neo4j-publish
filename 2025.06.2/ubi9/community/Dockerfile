@@ -50,7 +50,7 @@ RUN set -eux; \
     microdnf remove -y git* perl* make gcc glibc-headers glibc-devel libxcrypt-devel; \
     microdnf clean all
 
-ENV NEO4J_SHA256=d568d78af0f0b291e5d5e032761d384ec045971836ce4f1049b1353ae58618c8 \
+ENV NEO4J_SHA256=bc75048b24b1c8e94e10c80817f9c24811a69ca670cb714f4f2817daddfd9c28 \
     NEO4J_TARBALL=neo4j-community-2025.06.2-unix.tar.gz \
     NEO4J_EDITION=community \
     NEO4J_HOME="/var/lib/neo4j" \
