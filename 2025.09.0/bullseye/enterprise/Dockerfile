@@ -2,7 +2,7 @@ FROM debian:bullseye-slim
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:21 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
-    NEO4J_SHA256=5914da159fa7226f0d94c7af9179705c15df88cdf7e488560c0c21fa9f746fbc \
+    NEO4J_SHA256=0b81f4601987925d0a7a844b4206fc75fefb8cd989bc95b00f1ecbf38afc3e4f \
     NEO4J_TARBALL=neo4j-enterprise-2025.09.0-unix.tar.gz \
     NEO4J_EDITION=enterprise \
     NEO4J_HOME="/var/lib/neo4j" \
