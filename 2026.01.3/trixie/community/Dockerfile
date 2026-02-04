@@ -1,6 +1,6 @@
 FROM debian:trixie-slim
 ENV JAVA_HOME=/opt/java/openjdk
-COPY --from=eclipse-temurin:21 $JAVA_HOME $JAVA_HOME
+COPY --from=eclipse-temurin:25 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=fd9376186034a84eeca384971b2e9e3e80f8e41166529843f49c48e390a48694 \
     NEO4J_TARBALL=neo4j-community-2026.01.3-unix.tar.gz \
@@ -13,9 +13,9 @@ COPY ./local-package/* /startup/
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -o Acquire::Retries=10 -y \
-      adduser curl ca-certificates gcc libc-dev git jq make procps tini wget \
-    && addgroup --gid 7474 --system neo4j \
-    && adduser --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --ingroup neo4j neo4j \
+      curl ca-certificates gcc libc-dev git jq make procps tini wget \
+    && groupadd --gid 7474 --system neo4j \
+    && useradd --uid 7474 --system --no-create-home --home "${NEO4J_HOME}" --gid neo4j neo4j \
     && curl --fail --silent --show-error --location --remote-name ${NEO4J_URI} \
     && echo "${NEO4J_SHA256}  ${NEO4J_TARBALL}" | sha256sum -c --strict --quiet \
     && tar --extract --file ${NEO4J_TARBALL} --directory /var/lib \
