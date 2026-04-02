@@ -679,18 +679,19 @@ if [ "${cmd}" == "neo4j" ]; then
     debug_msg "getting full neo4j run command"
     neo4j_console_cmd="$(get_neo4j_run_cmd)"
     debug_msg "${exec_cmd} ${neo4j_console_cmd}"
-    if [ "${NEO4J_DEPRECATION_WARNING:-yes}" != "suppress" ]; then
- 	echo >&2 "
+    echo >&2 "
 =======================================================
  Neo4j Debian BULLSEYE images are deprecated in favour of Debian TRIXIE.
  Update your codebase to use Neo4j Docker image tags ending with -trixie instead of -bullseye.
 
- Neo4j 2026.04.0 will be the last version to get a Debian BULLSEYE docker image release.
+ This is the last Neo4j image available on Debian BULLSEYE.
+ By continuing to use BULLSEYE tagged Neo4j images you will not get further updates, 
+ including new features and security fixes.
 
- To suppress this warning set environment variable NEO4J_DEPRECATION_WARNING=suppress.
+ This message can not be suppressed.
  =======================================================
 "
- fi
+
 
     eval ${exec_cmd} ${neo4j_console_cmd?:No Neo4j command was generated}
 else
