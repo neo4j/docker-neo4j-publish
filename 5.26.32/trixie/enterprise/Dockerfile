@@ -1,15 +1,6 @@
 FROM debian:trixie-slim
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:21 $JAVA_HOME $JAVA_HOME
-# Stopgap for the eMudhra CA compromise (October 2026): stop trusting the three emSign roots
-# Mozilla removed in NSS 3.131.1 (emSign ECC Root CA - G3, emSign ECC Root CA - C3, emSign Root CA - C1).
-# Temurin builds from adoptium/temurin-build#4587 onwards no longer ship them; this is then a no-op.
-RUN "$JAVA_HOME/bin/keytool" -list -v -cacerts -storepass changeit \
-      | sed -n 's/^Alias name: //p' \
-      | grep -E 'emsign_(ecc_root_ca__g3|ecc_root_ca__c3|root_ca__c1)' \
-      | while read -r alias; do \
-          "$JAVA_HOME/bin/keytool" -delete -cacerts -storepass changeit -alias "$alias"; \
-        done
 ENV PATH="${JAVA_HOME}/bin:${PATH}" \
     NEO4J_SHA256=62d9ec7a4f96e3f1b4cd1c9c32e92e8071a8248e5292dd76e49f760f1ff69a60 \
     NEO4J_TARBALL=neo4j-enterprise-5.26.32-unix.tar.gz \
